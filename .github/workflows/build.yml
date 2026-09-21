@@ -1,0 +1,36 @@
+name: Build PDF Splitter
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Publish
+        run: dotnet publish -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true
+
+      - name: Prepare artifact
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path artifact
+          Copy-Item "bin/Release/net8.0-windows/win-x64/publish/PDF_Splitter.exe" "artifact/PDF_Splitter.exe"
+          Set-Content "artifact/README.txt" "Drag PDF files onto PDF_Splitter.exe. Every 2 pages become one PDF. Python and .NET are not required on the destination PC."
+
+      - name: Upload EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: PDF_Splitter-Windows
+          path: artifact/
+          retention-days: 30
